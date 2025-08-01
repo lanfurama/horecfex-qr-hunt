@@ -1,0 +1,133 @@
+{
+  "players": {
+    "uid_1": {
+      "name": "Nguyễn Văn A",
+      "username": "nva2025",
+      "email": "a@example.com",
+      "phone": "0901111222",
+      "points": 150,
+      "collectedCards": {
+        "card_1": true,
+        "card_2": true
+      },
+      "scans": {
+        "qr_001": {
+          "type": "normal",
+          "points": 5,
+          "time": "2025-08-01T09:15:00Z"
+        },
+        "qr_010": {
+          "type": "rare",
+          "points": 20,
+          "time": "2025-08-01T09:30:00Z"
+        },
+        "qr_021": {
+          "type": "special",
+          "challengeResult": "win",
+          "points": 40,
+          "time": "2025-08-01T10:00:00Z"
+        }
+      }
+    },
+    "uid_2": {
+      "name": "Trần Thị B",
+      "username": "ttb2025",
+      "email": "b@example.com",
+      "phone": "0903333444",
+      "points": 95,
+      "collectedCards": {
+        "card_3": true
+      },
+      "scans": {
+        "qr_002": {
+          "type": "normal",
+          "points": 5,
+          "time": "2025-08-01T09:10:00Z"
+        },
+        "qr_011": {
+          "type": "rare",
+          "points": 25,
+          "time": "2025-08-01T09:45:00Z"
+        },
+        "qr_card_03": {
+          "type": "collection",
+          "cardId": "card_3",
+          "points": 0,
+          "time": "2025-08-01T09:50:00Z"
+        }
+      }
+    },
+    "uid_3": {
+      "name": "Lê Văn C",
+      "username": "lvc2025",
+      "email": "c@example.com",
+      "phone": "0905555666",
+      "points": 210,
+      "collectedCards": {
+        "card_1": true,
+        "card_2": true,
+        "card_3": true,
+        "card_4": true
+      },
+      "scans": {
+        "qr_003": {
+          "type": "normal",
+          "points": 5,
+          "time": "2025-08-01T09:05:00Z"
+        },
+        "qr_012": {
+          "type": "rare",
+          "points": 30,
+          "time": "2025-08-01T09:20:00Z"
+        },
+        "qr_022": {
+          "type": "special",
+          "challengeResult": "lose",
+          "points": 20,
+          "time": "2025-08-01T10:10:00Z"
+        }
+      }
+    }
+  },
+  "qrcodes": {
+    "qr_001": { "type": "normal", "points": 5 },
+    "qr_002": { "type": "normal", "points": 5 },
+    "qr_003": { "type": "normal", "points": 5 },
+    "qr_004": { "type": "normal", "points": 5 },
+    "qr_005": { "type": "normal", "points": 5 },
+
+    "qr_010": { "type": "rare", "points": 20 },
+    "qr_011": { "type": "rare", "points": 25 },
+    "qr_012": { "type": "rare", "points": 30 },
+    "qr_013": { "type": "rare", "points": 20 },
+    "qr_014": { "type": "rare", "points": 25 },
+
+    "qr_020": { "type": "special", "miniChallenge": "memory_game", "points": 10 },
+    "qr_021": { "type": "special", "miniChallenge": "quiz_game", "points": 15 },
+    "qr_022": { "type": "special", "miniChallenge": "reaction_game", "points": 20 },
+
+    "qr_card_01": { "type": "collection", "cardId": "card_1" },
+    "qr_card_02": { "type": "collection", "cardId": "card_2" },
+    "qr_card_03": { "type": "collection", "cardId": "card_3" },
+    "qr_card_04": { "type": "collection", "cardId": "card_4" },
+    "qr_card_05": { "type": "collection", "cardId": "card_5" }
+  },
+  "leaderboard": {
+    "uid_3": { "name": "Lê Văn C", "points": 210 },
+    "uid_1": { "name": "Nguyễn Văn A", "points": 150 },
+    "uid_2": { "name": "Trần Thị B", "points": 95 }
+  },
+  "rewards": {
+    "reward_1": { "name": "🎁 Hộp Quà Bí Ẩn", "pointsRequired": 50, "description": "Bí mật bên trong chỉ được biết khi mở" },
+    "reward_2": { "name": "🎁 Hộp Quà Bí Ẩn", "pointsRequired": 100, "description": "Bí mật bên trong chỉ được biết khi mở" },
+    "reward_3": { "name": "🎁 Hộp Quà Bí Ẩn", "pointsRequired": 150, "description": "Bí mật bên trong chỉ được biết khi mở" },
+    "reward_4": { "name": "🎁 Hộp Quà Bí Ẩn", "pointsRequired": 200, "description": "Bí mật bên trong chỉ được biết khi mở" },
+    "reward_5": { "name": "🎁 Hộp Quà Bí Ẩn", "pointsRequired": 300, "description": "Bí mật bên trong chỉ được biết khi mở" }
+  },
+  "hourlyChallenges": {
+    "2025-08-01T10:00:00Z": {
+      "challengeType": "double_points",
+      "description": "Quét QR trong giờ này sẽ được x2 điểm"
+    }
+  }
+}
