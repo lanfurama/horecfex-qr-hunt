@@ -4,5 +4,4 @@
 
 body {
   @apply bg-gradient-to-br from-blue-500 via-purple-400 to-purple-200 min-h-screen;
-  overflow-y: hidden;
 }
