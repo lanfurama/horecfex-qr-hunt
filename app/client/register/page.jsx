@@ -131,48 +131,57 @@ export default function RegisterPage() {
   ];
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
-      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-gray-200">
-        <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">
-          Đăng ký QR Hunt
-        </h1>
+  <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-black px-4">
+    <div className="bg-white/10 backdrop-blur-xl p-6 rounded-3xl shadow-2xl w-full max-w-md border border-white/20">
+      
+      {/* Title */}
+      <h1 className="text-3xl font-extrabold text-center mb-8 text-white drop-shadow-lg">
+        Đăng ký QR Hunt
+      </h1>
 
-        {inputs.map(({ field, placeholder, type }) =>
-          renderInput(field, placeholder, type)
-        )}
+      {/* Inputs */}
+      {inputs.map(({ field, placeholder, type }) =>
+        renderInput(field, placeholder, type)
+      )}
 
-        <button
-          onClick={handleRegister}
-          disabled={loading}
-          className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold text-white transition-all ${
-            loading
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-indigo-600 hover:bg-indigo-700"
+      {/* Register button */}
+      <button
+        onClick={handleRegister}
+        disabled={loading}
+        className={`mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white shadow-lg transition-all transform ${
+          loading
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-gradient-to-r from-green-500 to-emerald-500 hover:scale-[1.02] hover:shadow-green-500/30"
+        }`}
+      >
+        {loading && <Loader2 className="animate-spin" size={20} />}
+        {loading ? "Đang đăng ký..." : "🎯 Đăng ký"}
+      </button>
+
+      {/* Login button */}
+      <button
+        onClick={() =>
+          router.push(
+            `/client/login?redirect=${encodeURIComponent(redirectParam)}`
+          )
+        }
+        className="mt-3 w-full py-3 rounded-xl font-semibold text-white/90 border border-white/40 hover:bg-white/20 transition-all hover:scale-[1.02]"
+      >
+        🔑 Đã có tài khoản? Đăng nhập
+      </button>
+
+      {/* Message */}
+      {message.text && (
+        <p
+          className={`mt-4 text-center font-medium ${
+            message.type === "error" ? "text-red-300" : "text-green-200"
           }`}
         >
-          {loading && <Loader2 className="animate-spin" size={20} />}
-          {loading ? "Đang đăng ký..." : "Đăng ký"}
-        </button>
-
-        <button
-          onClick={() =>
-            router.push(`/client/login?redirect=${encodeURIComponent(redirectParam)}`)
-          }
-          className="mt-3 w-full py-3 bg-green-600 hover:bg-green-700 rounded-lg font-semibold text-white transition-colors"
-        >
-          🔑 Đã có tài khoản? Đăng nhập
-        </button>
-
-        {message.text && (
-          <p
-            className={`mt-4 text-center font-medium ${
-              message.type === "error" ? "text-red-500" : "text-green-600"
-            }`}
-          >
-            {message.text}
-          </p>
-        )}
-      </div>
+          {message.text}
+        </p>
+      )}
     </div>
-  );
+  </div>
+);
+
 }
