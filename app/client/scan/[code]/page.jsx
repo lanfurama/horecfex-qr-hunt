@@ -1,46 +1,41 @@
 "use client";
-import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { auth } from "@/lib/firebase";
+import { useParams, useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
+import { useAuth } from "@/context/AuthProvider";
 
 export default function ScanCodePage() {
   const { code } = useParams();
+  const { user } = useAuth();
   const router = useRouter();
   const { width, height } = useWindowSize();
 
   const [showConfetti, setShowConfetti] = useState(false);
   const [displayPoints, setDisplayPoints] = useState(0);
-
   const [status, setStatus] = useState({
     loading: true,
-    type: "info", // info, success, error, warning
+    type: "info",
     message: "Đang xử lý điểm...",
     pointsAdded: 0
   });
 
-  // Hiệu ứng đếm số điểm
   const animatePoints = (target) => {
-    let start = 0;
-    const duration = 800; // 0.8s
+    let startTime = performance.now();
+    const duration = 800;
     const step = (timestamp) => {
       const progress = Math.min((timestamp - startTime) / duration, 1);
       setDisplayPoints(Math.floor(progress * target));
       if (progress < 1) requestAnimationFrame(step);
     };
-    const startTime = performance.now();
     requestAnimationFrame(step);
   };
 
   useEffect(() => {
-    const unsub = auth.onAuthStateChanged(async (user) => {
-      if (!user) {
-        router.replace(`/client/login?redirect=/client/scan/${code}`);
-        return;
-      }
+    if (!user) return; // Đã check ở layout, nhưng để an toàn
 
+    const fetchPoints = async () => {
       try {
         const res = await fetch("/api/qrcode/scan", {
           method: "POST",
@@ -83,10 +78,10 @@ export default function ScanCodePage() {
           pointsAdded: 0
         });
       }
-    });
+    };
 
-    return () => unsub();
-  }, [code, router]);
+    fetchPoints();
+  }, [code, user]);
 
   const iconMap = {
     success: <CheckCircle2 className="text-green-400 w-20 h-20 mb-4" />,
@@ -100,7 +95,6 @@ export default function ScanCodePage() {
       {showConfetti && <Confetti width={width} height={height} />}
 
       <div className="max-w-xs w-full flex flex-col items-center text-center">
-        
         {iconMap[status.type]}
         <p className="text-xl font-bold mb-2">{status.message}</p>
 

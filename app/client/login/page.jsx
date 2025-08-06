@@ -4,61 +4,82 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { auth, db } from "@/lib/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { ref, get } from "firebase/database";
-import { useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+
+// Map lỗi Firebase sang tiếng Việt
+const firebaseErrorMap = {
+  "auth/user-not-found": "❌ Tài khoản không tồn tại.",
+  "auth/wrong-password": "❌ Sai mật khẩu. Vui lòng thử lại.",
+  "auth/invalid-email": "❌ Email không hợp lệ.",
+  "auth/too-many-requests":
+    "⚠ Tài khoản tạm khóa do đăng nhập sai quá nhiều lần. Thử lại sau.",
+};
 
 export default function LoginPage() {
-  const [input, setInput] = useState("");
-  const [password, setPassword] = useState("");
-  const [message, setMessage] = useState({ text: "", type: "" });
-  const [loading, setLoading] = useState(false);
-  const [showPass, setShowPass] = useState(false);
+  const searchParams = useSearchParams();
   const router = useRouter();
 
+  const [input, setInput] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ text: "", type: "" });
+
+  const redirectParam = searchParams.get("redirect") || "/client/profile";
+
+  const getErrorMessage = (err) =>
+    firebaseErrorMap[err.code] ||
+    `❌ ${err.message || "Đăng nhập thất bại."}`;
+
   const handleLogin = async () => {
-  if (!input.trim() || !password.trim()) {
-    setMessage({ text: "Vui lòng nhập đầy đủ thông tin", type: "error" });
-    return;
-  }
+    if (loading) return; // Chặn double click
 
-  setLoading(true);
-  setMessage({ text: "", type: "" });
-
-  try {
-    let emailToLogin = input.trim();
-
-    if (!input.includes("@")) {
-      // Chạy song song username và phone lookup
-      const [usernameSnap, phoneSnap] = await Promise.all([
-        get(ref(db, `usernames/${input}`)),
-        /^[0-9]+$/.test(input) ? get(ref(db, `phones/${input}`)) : Promise.resolve(null)
-      ]);
-
-      if (usernameSnap?.exists()) {
-        const uid = usernameSnap.val();
-        const emailSnap = await get(ref(db, `players/${uid}/email`));
-        if (emailSnap.exists()) emailToLogin = emailSnap.val();
-      } else if (phoneSnap?.exists()) {
-        const uid = phoneSnap.val();
-        const emailSnap = await get(ref(db, `players/${uid}/email`));
-        if (emailSnap.exists()) emailToLogin = emailSnap.val();
-      }
+    if (!input.trim() || !password.trim()) {
+      setMessage({ text: "⚠ Vui lòng nhập đầy đủ thông tin.", type: "error" });
+      return;
     }
 
-    await signInWithEmailAndPassword(auth, emailToLogin, password);
-    setMessage({ text: "Đăng nhập thành công!", type: "success" });
-    setTimeout(() => router.push("/client/profile"), 500);
-  } catch (err) {
-    let errMsg = "Đăng nhập thất bại. ";
-    if (err.code === "auth/user-not-found") errMsg += "Tài khoản không tồn tại.";
-    else if (err.code === "auth/wrong-password") errMsg += "Sai mật khẩu.";
-    else if (err.code === "auth/invalid-email") errMsg += "Email không hợp lệ.";
-    else errMsg += err.message;
+    setLoading(true);
+    setMessage({ text: "", type: "" });
 
-    setMessage({ text: errMsg, type: "error" });
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      let emailToLogin = input.trim();
+
+      // Nếu không phải email → tìm email qua username hoặc phone
+      if (!input.includes("@")) {
+        const isPhone = /^[0-9]+$/.test(input);
+        let uid = null;
+
+        if (isPhone) {
+          // Tìm qua phone trước
+          const phoneSnap = await get(ref(db, `phones/${input}`));
+          if (phoneSnap.exists()) uid = phoneSnap.val();
+        } else {
+          // Tìm qua username
+          const usernameSnap = await get(ref(db, `usernames/${input}`));
+          if (usernameSnap.exists()) uid = usernameSnap.val();
+        }
+
+        if (uid) {
+          const emailSnap = await get(ref(db, `players/${uid}/email`));
+          if (emailSnap.exists()) emailToLogin = emailSnap.val();
+        }
+      }
+
+      // Đăng nhập Firebase Auth
+      await signInWithEmailAndPassword(auth, emailToLogin, password);
+
+      setMessage({ text: "✅ Đăng nhập thành công!", type: "success" });
+      setTimeout(() => router.push(redirectParam), 300);
+    } catch (err) {
+      setMessage({ text: getErrorMessage(err), type: "error" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const inputClass =
+    "w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-400 outline-none transition text-gray-800";
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
@@ -67,43 +88,61 @@ export default function LoginPage() {
           Đăng nhập QR Hunt
         </h1>
 
+        {/* Email / Username / Phone */}
         <input
           placeholder="Email / Username / Số điện thoại"
           value={input}
+          disabled={loading}
           onChange={(e) => setInput(e.target.value)}
-          className="w-full mb-3 p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-400 outline-none transition"
+          className={`${inputClass} mb-3 disabled:bg-gray-100`}
         />
 
+        {/* Password */}
         <div className="relative mb-4">
           <input
             type={showPass ? "text" : "password"}
             placeholder="Mật khẩu"
             value={password}
+            disabled={loading}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-400 outline-none transition pr-12"
+            className={`${inputClass} pr-12 disabled:bg-gray-100`}
           />
           <button
             type="button"
             onClick={() => setShowPass(!showPass)}
+            disabled={loading}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
           >
             {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
           </button>
         </div>
 
+        {/* Login button */}
         <button
           onClick={handleLogin}
           disabled={loading}
-          className={`w-full flex items-center justify-center gap-2 ${
+          className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold text-white transition-all ${
             loading
               ? "bg-gray-400 cursor-not-allowed"
               : "bg-indigo-600 hover:bg-indigo-700"
-          } py-3 rounded-lg font-semibold text-white transition-all`}
+          }`}
         >
           {loading && <Loader2 className="animate-spin" size={20} />}
           {loading ? "Đang đăng nhập..." : "Đăng nhập"}
         </button>
 
+        {/* Register button */}
+        <button
+          onClick={() =>
+            router.push(`/client/register?redirect=${encodeURIComponent(redirectParam)}`)
+          }
+          disabled={loading}
+          className="mt-3 w-full py-3 bg-green-600 hover:bg-green-700 rounded-lg font-semibold text-white transition-colors disabled:bg-gray-400"
+        >
+          📝 Đăng ký tài khoản mới
+        </button>
+
+        {/* Error / success message */}
         {message.text && (
           <p
             className={`mt-4 text-center font-medium ${

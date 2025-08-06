@@ -1,6 +1,5 @@
 
 import "./globals.css";
-import ConditionalBottomNav from "@/components/ConditionalBottomNav";
 
 export const metadata = {
   title: "Horecfex 2025 QR Hunt",
@@ -14,7 +13,6 @@ export default function RootLayout({ children }) {
       <body className="bg-white">
         <div className="max-w-sm mx-auto bg-white min-h-screen flex flex-col">
           <div className="flex-1 pb-20">{children}</div>
-           <ConditionalBottomNav /> 
         </div>
       </body>
     </html>

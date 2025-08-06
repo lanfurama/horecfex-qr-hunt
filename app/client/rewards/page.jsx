@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
-import { auth, db } from "@/lib/firebase";
+import { useEffect, useState, useCallback } from "react";
+import { db } from "@/lib/firebase-client";
 import {
   ref,
   push,
@@ -11,103 +11,79 @@ import {
   onValue,
 } from "firebase/database";
 import { CheckCircle, XCircle, Clock } from "lucide-react";
+import { useAuth } from "@/context/AuthProvider"; // ✅ Dùng AuthProvider
 
 export default function RewardsPage() {
+  const { user } = useAuth();
   const [rewards, setRewards] = useState({});
   const [player, setPlayer] = useState(null);
   const [redeems, setRedeems] = useState([]);
 
+  // 🔹 Lắng nghe realtime
   useEffect(() => {
-    const user = auth.currentUser;
     if (!user) return;
 
-    // 🔹 Lắng nghe realtime thông tin người chơi
-    const playerRef = ref(db, `players/${user.uid}`);
-    const unsubPlayer = onValue(playerRef, (snap) => {
+    const unsubPlayer = onValue(ref(db, `players/${user.uid}`), (snap) => {
       if (snap.exists()) {
         setPlayer({ uid: user.uid, ...snap.val() });
       }
     });
 
-    // 🔹 Lắng nghe realtime danh sách quà
-    const rewardsRef = ref(db, "rewards");
-    const unsubRewards = onValue(rewardsRef, (snap) => {
-      if (snap.exists()) {
-        setRewards(snap.val());
-      } else {
-        setRewards({});
-      }
+    const unsubRewards = onValue(ref(db, "rewards"), (snap) => {
+      setRewards(snap.exists() ? snap.val() : {});
     });
 
-    // 🔹 Lắng nghe realtime quà đã đổi của người chơi
-    const redeemsRef = query(
-      ref(db, "redeems"),
-      orderByChild("uid"),
-      equalTo(user.uid)
-    );
-    const unsubRedeems = onValue(redeemsRef, (snap) => {
-      if (snap.exists()) {
-        const data = [];
-        snap.forEach((child) => {
-          data.push({ id: child.key, ...child.val() });
-        });
-        data.sort((a, b) => b.createdAt - a.createdAt);
-        setRedeems(data);
-      } else {
-        setRedeems([]);
+    const unsubRedeems = onValue(
+      query(ref(db, "redeems"), orderByChild("uid"), equalTo(user.uid)),
+      (snap) => {
+        if (snap.exists()) {
+          const data = [];
+          snap.forEach((child) => data.push({ id: child.key, ...child.val() }));
+          setRedeems(data.sort((a, b) => b.createdAt - a.createdAt));
+        } else {
+          setRedeems([]);
+        }
       }
-    });
+    );
 
     return () => {
       unsubPlayer();
       unsubRewards();
       unsubRedeems();
     };
-  }, []);
+  }, [user]);
 
-  const generateRedeemCode = () => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    return Array.from({ length: 6 }, () =>
-      chars.charAt(Math.floor(Math.random() * chars.length))
+  const generateRedeemCode = () =>
+    Array.from({ length: 6 }, () =>
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".charAt(
+        Math.floor(Math.random() * 36)
+      )
     ).join("");
-  };
 
-  const handleRedeem = async (rewardId, reward) => {
+  const handleRedeem = useCallback(async (rewardId, reward) => {
     if (!player) return;
+
     if (!confirm(`Đổi quà "${reward.name}" với ${reward.pointsRequired} điểm?`))
       return;
 
-    const playerRef = ref(db, `players/${player.uid}`);
-
     try {
-      // Transaction: trừ điểm nếu đủ
-      const txResult = await runTransaction(playerRef, (currentData) => {
-        if (!currentData) return currentData;
-
-        if (currentData.points < reward.pointsRequired) {
-          // Không đủ điểm -> hủy transaction
-          return;
-        }
-
-        // Trừ điểm
-        currentData.points -= reward.pointsRequired;
-        return currentData;
+      const playerRef = ref(db, `players/${player.uid}`);
+      const txResult = await runTransaction(playerRef, (current) => {
+        if (!current) return current;
+        if (current.points < reward.pointsRequired) return; // Không đủ điểm
+        current.points -= reward.pointsRequired;
+        return current;
       });
 
-      // Nếu transaction không commit -> báo lỗi
       if (!txResult.committed) {
         alert("❌ Bạn không đủ điểm để đổi quà này!");
         return;
       }
 
-      // Tạo mã đổi quà
       const redeemCode = generateRedeemCode();
-
-      // Ghi vào bảng redeem
       await push(ref(db, "redeems"), {
         uid: player.uid,
         playerName: player.name || "",
-        playerUsername: player.username || "",
         rewardId,
         rewardName: reward.name,
         pointsUsed: reward.pointsRequired,
@@ -121,56 +97,38 @@ export default function RewardsPage() {
       console.error("Lỗi đổi quà:", error);
       alert("❌ Có lỗi xảy ra khi đổi quà!");
     }
-  };
+  }, [player]);
 
   const StatusBadge = ({ status }) => {
-    if (status === "confirmed")
-      return (
-        <span className="flex items-center gap-1 text-green-400 font-semibold">
-          <CheckCircle className="w-5 h-5" /> Đã xác nhận
-        </span>
-      );
-    if (status === "rejected")
-      return (
-        <span className="flex items-center gap-1 text-red-400 font-semibold">
-          <XCircle className="w-5 h-5" /> Từ chối
-        </span>
-      );
-    return (
-      <span className="flex items-center gap-1 text-yellow-400 font-semibold">
-        <Clock className="w-5 h-5" /> Chờ duyệt
-      </span>
-    );
+    const map = {
+      confirmed: { icon: <CheckCircle className="w-5 h-5" />, text: "Đã xác nhận", color: "text-green-400" },
+      rejected: { icon: <XCircle className="w-5 h-5" />, text: "Từ chối", color: "text-red-400" },
+      pending: { icon: <Clock className="w-5 h-5" />, text: "Chờ duyệt", color: "text-yellow-400" },
+    };
+    const s = map[status] || map.pending;
+    return <span className={`flex items-center gap-1 font-semibold ${s.color}`}>{s.icon} {s.text}</span>;
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-black p-4 pb-20 text-white">
-      {/* Thông tin người chơi */}
       {player && (
-        <div className="bg-white/10 border border-white/20 p-4 rounded-xl shadow mb-6 text-center backdrop-blur-sm">
+        <div className="bg-white/10 border border-white/20 p-4 rounded-xl text-center mb-6">
           <p className="text-gray-200">Điểm hiện tại</p>
           <p className="text-4xl font-bold text-yellow-300">{player.points}</p>
           <p className="text-sm text-gray-400 mt-1">{player.name}</p>
         </div>
       )}
 
-      {/* Quà đã đổi */}
       <h2 className="text-xl font-semibold mb-3">📜 Quà đã đổi</h2>
       {redeems.length > 0 ? (
         <div className="space-y-3 mb-8">
           {redeems.map((r) => (
-            <div
-              key={r.id}
-              className="bg-white/5 border border-white/20 rounded-lg p-4 backdrop-blur-sm"
-            >
+            <div key={r.id} className="bg-white/5 border border-white/20 rounded-lg p-4">
               <div className="flex justify-between items-center">
                 <div>
                   <p className="font-bold">{r.rewardName}</p>
                   <p className="text-sm text-gray-300">
-                    Mã:{" "}
-                    <span className="font-mono text-yellow-300">
-                      {r.redeemCode}
-                    </span>
+                    Mã: <span className="font-mono text-yellow-300">{r.redeemCode}</span>
                   </p>
                   <p className="text-xs text-gray-400">
                     {new Date(r.createdAt).toLocaleString()}
@@ -185,16 +143,12 @@ export default function RewardsPage() {
         <p className="text-gray-400 mb-8">📭 Chưa có</p>
       )}
 
-      {/* Quà có thể đổi */}
       <h2 className="text-xl font-semibold mb-3">🎯 Quà có thể đổi</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {Object.entries(rewards).map(([id, reward]) => {
           const canRedeem = player && player.points >= reward.pointsRequired;
           return (
-            <div
-              key={id}
-              className="bg-white/5 border border-white/20 rounded-xl p-4 shadow-sm backdrop-blur-sm flex flex-col justify-between"
-            >
+            <div key={id} className="bg-white/5 border border-white/20 rounded-xl p-4 flex flex-col justify-between">
               <div>
                 <h2 className="font-bold text-lg mb-1">{reward.name}</h2>
                 <p className="text-gray-300 text-sm mb-2">{reward.description}</p>

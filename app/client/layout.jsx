@@ -1,60 +1,39 @@
 "use client";
 
-import "./globals.css";
-import ConditionalBottomNav from "@/components/ConditionalBottomNav";
-import { auth, db } from "@/lib/firebase-client";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { ref, get } from "firebase/database";
-import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import ClientBottomNav from "@/components/ClientBottomNav";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { AuthProvider, useAuth } from "@/context/AuthProvider";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
-export default function RootLayout({ children }) {
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
+function LayoutContent({ children }) {
+  const { loading: authLoading } = useAuth();
+  const [routeLoading, setRouteLoading] = useState(false);
   const pathname = usePathname();
 
+  // Khi pathname thay đổi => tắt spinner sau 300ms
   useEffect(() => {
-    if (pathname === "/client/login") {
-      setLoading(false);
-      return;
+    if (routeLoading) {
+      const timer = setTimeout(() => setRouteLoading(false), 300);
+      return () => clearTimeout(timer);
     }
+  }, [pathname, routeLoading]);
 
-    const unsub = onAuthStateChanged(auth, async (user) => {
-      const goLogin = () => router.replace("/client/login");
-
-      try {
-        if (!user) return goLogin();
-
-        const snap = await get(ref(db, `players/${user.uid}`));
-        if (!snap.exists()) {
-          await signOut(auth);
-          return goLogin();
-        }
-
-        setLoading(false);
-      } catch (error) {
-        console.error("Auth check error:", error);
-        goLogin();
-      }
-    });
-
-    return unsub;
-  }, [pathname, router]);
+  const isLoading = authLoading || routeLoading;
 
   return (
-        <div className="max-w-sm mx-auto bg-white h-screen flex flex-col">
-          {/* Nội dung */}
-          <div className="flex-1 overflow-y-auto pb-20">
-            {loading ? (
-              <LoadingSpinner />
-            ) : (
-              children
-            )}
-          </div>
+    <div>
+      <div>{isLoading ? <LoadingSpinner /> : children}</div>
+      <ClientBottomNav onNavigate={() => setRouteLoading(true)} />
+    </div>
+  );
+}
 
-          {/* Nav luôn render */}
-          <ConditionalBottomNav />
-        </div>
+export default function RootLayout({ children }) {
+  return (
+    <AuthProvider>
+      <LayoutContent>{children}</LayoutContent>
+    </AuthProvider>
   );
 }

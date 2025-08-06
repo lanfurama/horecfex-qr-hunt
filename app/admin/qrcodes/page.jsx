@@ -143,7 +143,7 @@ export default function AdminQRCodesPage() {
       {/* Danh sách QR */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filteredAndSortedQRCodes.map(([code, data]) => {
-          const scanUrl = `${window.location.origin}/api/qrcode/scan/${code}`;
+          const scanUrl = `${window.location.origin}/client/scan/${code}`;
 
           const labelStyle =
             data.type === "special"

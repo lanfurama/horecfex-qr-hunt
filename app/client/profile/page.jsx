@@ -1,43 +1,36 @@
 "use client";
-import { auth, db } from "@/lib/firebase-client";
+import { db } from "@/lib/firebase-client";
 import { useEffect, useState } from "react";
 import { ref, get } from "firebase/database";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthProvider"; // ✅ dùng auth context
 
 export default function ProfilePage() {
+  const { user } = useAuth(); // đã được check login ở layout
   const [player, setPlayer] = useState(null);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
+    if (!user) return; // layout đã redirect nếu chưa login
     const fetchPlayer = async () => {
-      const user = auth.currentUser;
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
       const snap = await get(ref(db, `players/${user.uid}`));
       if (snap.exists()) {
         setPlayer({ uid: user.uid, ...snap.val() });
       }
-
-      setLoading(false);
     };
-
     fetchPlayer();
-  }, []);
+  }, [user]);
 
   const handleLogout = async () => {
-    await signOut(auth);
-    router.push("login");
+    await signOut(user.auth);
+    router.push("/client/login");
   };
 
   if (!player) {
     return (
       <div className="text-center text-black mt-10">
-        ❌ Không tìm thấy thông tin người chơi
+        ⏳ Đang tải thông tin...
       </div>
     );
   }
