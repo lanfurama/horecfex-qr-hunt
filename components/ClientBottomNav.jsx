@@ -63,7 +63,13 @@ function NavItem({ icon, label, active, href, onNavigate }) {
   return (
     <Link
       href={href}
-      onClick={onNavigate}
+      onClick={(e) => {
+        if (!active) {
+          onNavigate?.();
+        } else {
+          e.preventDefault(); // Không làm gì khi click lại tab hiện tại
+        }
+      }}
       className={`flex flex-col items-center text-xs transition-colors ${
         active
           ? "text-indigo-500 font-semibold"

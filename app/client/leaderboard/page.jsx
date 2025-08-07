@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase-client";
-import { ref, get, child } from "firebase/database";
+import { ref, get, child, onValue, off } from "firebase/database";
 import { useAuth } from "@/context/AuthProvider";
 
 export default function LeaderboardPage() {
@@ -12,45 +12,45 @@ export default function LeaderboardPage() {
   useEffect(() => {
     if (!user) return;
 
-    const fetchLeaderboard = async () => {
-      try {
-        const leaderboardSnap = await get(ref(db, "leaderboard"));
-        if (!leaderboardSnap.exists()) {
-          setPlayers([]);
-          setLoading(false);
-          return;
-        }
+    const leaderboardRef = ref(db, "leaderboard");
 
-        const leaderboardData = leaderboardSnap.val();
-        const dbRef = ref(db);
-
-        // Duyệt từng UID và lấy info từ players
-        const mergedData = await Promise.all(
-          Object.entries(leaderboardData).map(async ([uid, lb]) => {
-            const playerSnap = await get(child(dbRef, `players/${uid}`));
-            const playerData = playerSnap.exists() ? playerSnap.val() : {};
-
-            return {
-              uid,
-              name: lb.name || playerData.name || "Người chơi",
-              points: lb.points || 0,
-              email: playerData.email || "Không có email",
-              phone: playerData.phone || "Không có SĐT",
-            };
-          })
-        );
-
-        // Sắp xếp lại cho chắc chắn
-        mergedData.sort((a, b) => b.points - a.points);
-
-        setPlayers(mergedData);
-      } catch (error) {
-        console.error("Lỗi tải leaderboard:", error);
+    const handleSnapshot = async (leaderboardSnap) => {
+      if (!leaderboardSnap.exists()) {
+        setPlayers([]);
+        setLoading(false);
+        return;
       }
+
+      const leaderboardData = leaderboardSnap.val();
+      const dbRef = ref(db);
+
+      const mergedData = await Promise.all(
+        Object.entries(leaderboardData).map(async ([uid, lb]) => {
+          const playerSnap = await get(child(dbRef, `players/${uid}`));
+          const playerData = playerSnap.exists() ? playerSnap.val() : {};
+
+          return {
+            uid,
+            name: lb.name || playerData.name || "Người chơi",
+            points: lb.points || 0,
+            email: playerData.email || "Không có email",
+            phone: playerData.phone || "Không có SĐT",
+          };
+        })
+      );
+
+      mergedData.sort((a, b) => b.points - a.points);
+      setPlayers(mergedData);
       setLoading(false);
     };
 
-    fetchLeaderboard();
+    // Lắng nghe realtime
+    onValue(leaderboardRef, handleSnapshot);
+
+    // Clear listener khi component unmount
+    return () => {
+      off(leaderboardRef, "value", handleSnapshot);
+    };
   }, [user]);
 
   if (loading) {

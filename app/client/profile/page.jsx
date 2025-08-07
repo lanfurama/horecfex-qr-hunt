@@ -1,11 +1,16 @@
 "use client";
 import { db } from "@/lib/firebase-client";
 import { useEffect, useState } from "react";
-import { ref, get, query, orderByChild, equalTo, onValue } from "firebase/database";
+import {
+  ref,
+  query,
+  orderByChild,
+  equalTo,
+  onValue,
+} from "firebase/database";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthProvider";
-import { LogOut } from "lucide-react";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -17,24 +22,37 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!user) return;
 
-    // Lấy thông tin người chơi
-    get(ref(db, `players/${user.uid}`)).then((snap) => {
+    // ✅ Realtime player data
+    const playerRef = ref(db, `players/${user.uid}`);
+    const unsubPlayer = onValue(playerRef, (snap) => {
       if (snap.exists()) {
         setPlayer({ uid: user.uid, ...snap.val() });
       }
     });
 
-    // Lấy lịch sử đổi quà
-    const redeemRef = query(ref(db, "redeems"), orderByChild("uid"), equalTo(user.uid));
-    onValue(redeemRef, (snap) => {
-      if (snap.exists()) {
-        const data = [];
-        snap.forEach((child) => data.push({ id: child.key, ...child.val() }));
-        setRedeems(data.sort((a, b) => b.createdAt - a.createdAt));
-      } else {
-        setRedeems([]);
-      }
+    // ✅ Realtime redeem history
+    const redeemRef = query(
+      ref(db, "redeems"),
+      orderByChild("uid"),
+      equalTo(user.uid)
+    );
+    const unsubRedeems = onValue(redeemRef, (snap) => {
+      const data = [];
+      snap.forEach((child) => {
+        const val = child.val();
+        data.push({
+          id: child.key,
+          ...val,
+          createdAt: typeof val.createdAt === "number" ? val.createdAt : 0,
+        });
+      });
+      setRedeems(data.sort((a, b) => b.createdAt - a.createdAt));
     });
+
+    return () => {
+      unsubPlayer();
+      unsubRedeems();
+    };
   }, [user]);
 
   const handleLogout = async () => {
@@ -43,41 +61,32 @@ export default function ProfilePage() {
   };
 
   if (!player) {
-    return (
-      <div className="text-center text-white mt-10">
-        ⏳ Đang tải thông tin...
-      </div>
-    );
+    return <div className="text-center text-white mt-10">⏳ Đang tải thông tin...</div>;
   }
 
   const StatusBadge = ({ status }) => {
     const map = {
-      confirmed: { text: "Đã nhận", color: "text-green-400" },
+      confirmed: { text: "Đã nhận", color: "text-green-500" },
       pending: { text: "Chờ duyệt", color: "text-yellow-400" },
-      rejected: { text: "Từ chối", color: "text-red-400" },
+      rejected: { text: "Từ chối", color: "text-red-500" },
     };
     const s = map[status] || map.pending;
-    return (
-      <span className={`text-xs font-semibold ${s.color}`}>
-        {s.text}
-      </span>
-    );
+    return <span className={`text-xs font-semibold ${s.color}`}>{s.text}</span>;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-black p-3 pb-20 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-black p-4 pb-20 text-white">
       {/* Header */}
-      <div className="bg-white/5 rounded-2xl p-4 relative">
+      <div className="bg-white/5 rounded-xl p-4 relative">
         <button
           onClick={handleLogout}
-          className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 p-2 rounded-full"
+          className="absolute top-3 right-3 text-sm text-gray-300 hover:text-white"
         >
-          <LogOut className="w-5 h-5 text-white" />
+          Đăng xuất
         </button>
 
         <div className="flex items-center gap-4">
-          {/* Avatar chữ cái đầu */}
-          <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-xl font-bold">
+          <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center text-xl font-bold">
             {player.name?.charAt(0) || "?"}
           </div>
 
@@ -90,26 +99,29 @@ export default function ProfilePage() {
 
         {/* Điểm */}
         <div className="mt-4">
-          <span className="px-3 py-1 rounded-lg bg-yellow-400/20 text-yellow-300 font-semibold text-sm">
-            Điểm hiện tại: {player.points}
+          <span className="px-3 py-1 rounded-lg bg-yellow-500/20 text-yellow-300 font-semibold text-sm">
+            Điểm: {player.points}
           </span>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="mt-6">
+      <div className="mt-2">
         <div className="flex border-b border-white/10 mb-4">
-          {["scan", "redeem"].map((tab) => (
+          {[
+            { key: "scan", label: "Lịch sử quét QR" },
+            { key: "redeem", label: "Lịch sử đổi quà" },
+          ].map((tab) => (
             <button
-              key={tab}
+              key={tab.key}
               className={`flex-1 py-2 text-sm font-medium transition ${
-                activeTab === tab
+                activeTab === tab.key
                   ? "border-b-2 border-yellow-300 text-yellow-300"
-                  : "text-gray-400 hover:text-white"
+                  : "text-gray-300 hover:text-white"
               }`}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => setActiveTab(tab.key)}
             >
-              {tab === "scan" ? "Lịch sử quét QR" : "Lịch sử đổi quà"}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -136,7 +148,6 @@ export default function ProfilePage() {
                         {new Date(data.time).toLocaleString()}
                       </p>
                     </div>
-                    <span className="text-lg">📱</span>
                   </div>
                 ))
             ) : (
@@ -160,7 +171,7 @@ export default function ProfilePage() {
                       -{r.pointsUsed} điểm
                     </p>
                     <p className="text-xs text-gray-400">
-                      {new Date(r.createdAt).toLocaleString()}
+                      {new Date(r.createdAt || 0).toLocaleString()}
                     </p>
                     <p className="text-xs text-gray-400">
                       Mã: <span className="font-mono">{r.redeemCode}</span>

@@ -5,6 +5,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { ref, set, get } from "firebase/database";
 import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useToast } from "@/context/ToastProvider";
 
 // Map lỗi Firebase sang tiếng Việt
 const firebaseErrorMap = {
@@ -21,14 +22,13 @@ export default function RegisterPage() {
     phone: "",
     password: "",
   });
-  const [message, setMessage] = useState({ text: "", type: "" });
   const [loading, setLoading] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectParam = searchParams.get("redirect") || "/client/profile";
+  const { triggerToast } = useToast();
 
-  // Validate form client-side trước khi gọi API
   const validateForm = () => {
     if (!form.name || !form.username || !form.email || !form.phone || !form.password) {
       return "Vui lòng nhập đầy đủ thông tin";
@@ -45,71 +45,131 @@ export default function RegisterPage() {
     return "";
   };
 
-  const handleRegister = async () => {
-    if (loading) return; // chống double click
+  // const handleRegister = async () => {
+  //   if (loading) return;
 
-    const errorMsg = validateForm();
-    if (errorMsg) {
-      setMessage({ text: errorMsg, type: "error" });
+  //   const errorMsg = validateForm();
+  //   if (errorMsg) {
+  //     triggerToast(errorMsg, "error");
+  //     return;
+  //   }
+
+  //   setLoading(true);
+
+  //   try {
+  //     // Kiểm tra username và số điện thoại
+  //     const [usernameSnap, phoneSnap] = await Promise.all([
+  //       get(ref(db, `usernames/${form.username}`)),
+  //       get(ref(db, `phones/${form.phone}`)),
+  //     ]);
+
+  //     if (usernameSnap.exists()) {
+  //       triggerToast("❌ Username đã tồn tại", "error");
+  //       setLoading(false);
+  //       return;
+  //     }
+  //     if (phoneSnap.exists()) {
+  //       triggerToast("❌ Số điện thoại đã tồn tại", "error");
+  //       setLoading(false);
+  //       return;
+  //     }
+
+  //     // Tạo tài khoản Firebase
+  //     const userCred = await createUserWithEmailAndPassword(auth, form.email, form.password);
+  //     const uid = userCred.user.uid;
+
+  //     // Ghi dữ liệu vào Realtime DB
+  //     await Promise.all([
+  //       set(ref(db, `players/${uid}`), {
+  //         name: form.name,
+  //         username: form.username,
+  //         email: form.email,
+  //         phone: form.phone,
+  //         points: 0,
+  //         collectedCards: {},
+  //         scans: {},
+  //       }),
+  //       set(ref(db, `usernames/${form.username}`), uid),
+  //       set(ref(db, `phones/${form.phone}`), uid),
+  //     ]);
+
+  //     triggerToast("✅ Đăng ký thành công!", "success");
+
+  //     setTimeout(() => {
+  //       router.push(redirectParam);
+  //     }, 300);
+  //   } catch (err) {
+  //     const msg = firebaseErrorMap[err.code] || "Lỗi không xác định";
+  //     triggerToast("❌ " + msg, "error");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const handleRegister = async () => {
+  if (loading) return;
+
+  const errorMsg = validateForm();
+  if (errorMsg) {
+    triggerToast(errorMsg, "error");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    // Kiểm tra username và số điện thoại
+    const [usernameSnap, phoneSnap] = await Promise.all([
+      get(ref(db, `usernames/${form.username}`)),
+      get(ref(db, `phones/${form.phone}`)),
+    ]);
+
+    if (usernameSnap.exists()) {
+      triggerToast("❌ Username đã tồn tại", "error");
+      setLoading(false);
+      return;
+    }
+    if (phoneSnap.exists()) {
+      triggerToast("❌ Số điện thoại đã tồn tại", "error");
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
-    setMessage({ text: "", type: "" });
+    // Tạo tài khoản Firebase
+    const userCred = await createUserWithEmailAndPassword(auth, form.email, form.password);
+    const uid = userCred.user.uid;
 
-    try {
-      // Kiểm tra username & phone song song
-      const [usernameSnap, phoneSnap] = await Promise.all([
-        get(ref(db, `usernames/${form.username}`)),
-        get(ref(db, `phones/${form.phone}`))
-      ]);
+    // Gửi email xác minh
+    await userCred.user.sendEmailVerification();
 
-      if (usernameSnap.exists()) {
-        setLoading(false);
-        setMessage({ text: "❌ Username đã tồn tại", type: "error" });
-        return;
-      }
-      if (phoneSnap.exists()) {
-        setLoading(false);
-        setMessage({ text: "❌ Số điện thoại đã tồn tại", type: "error" });
-        return;
-      }
+    // Ghi dữ liệu vào Realtime DB
+    await Promise.all([
+      set(ref(db, `players/${uid}`), {
+        name: form.name,
+        username: form.username,
+        email: form.email,
+        phone: form.phone,
+        points: 0,
+        collectedCards: {},
+        scans: {},
+      }),
+      set(ref(db, `usernames/${form.username}`), uid),
+      set(ref(db, `phones/${form.phone}`), uid),
+    ]);
 
-      // Tạo user Firebase Auth
-      const userCred = await createUserWithEmailAndPassword(auth, form.email, form.password);
-      const uid = userCred.user.uid;
+    triggerToast("✅ Đăng ký thành công! Vui lòng kiểm tra email để xác minh", "success");
 
-      // Lưu dữ liệu vào DB song song
-      await Promise.all([
-        set(ref(db, `players/${uid}`), {
-          name: form.name,
-          username: form.username,
-          email: form.email,
-          phone: form.phone,
-          points: 0,
-          collectedCards: {},
-          scans: {},
-        }),
-        set(ref(db, `usernames/${form.username}`), uid),
-        set(ref(db, `phones/${form.phone}`), uid),
-      ]);
+    setTimeout(() => {
+      router.push(redirectParam);
+    }, 300);
+  } catch (err) {
+    const msg = firebaseErrorMap[err.code] || "Lỗi không xác định";
+    triggerToast("❌ " + msg, "error");
+  } finally {
+    setLoading(false);
+  }
+};
 
-      setMessage({ text: "✅ Đăng ký thành công!", type: "success" });
-
-      // Chuyển hướng sau khi đăng ký
-      setTimeout(() => {
-        router.push(redirectParam);
-      }, 300);
-
-    } catch (err) {
-      setMessage({
-        text: "❌ " + (firebaseErrorMap[err.code] || "Lỗi không xác định"),
-        type: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const renderInput = (field, placeholder, type = "text") => (
     <input
@@ -131,57 +191,38 @@ export default function RegisterPage() {
   ];
 
   return (
-  <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-black px-4">
-    <div className="bg-white/10 backdrop-blur-xl p-6 rounded-3xl shadow-2xl w-full max-w-md border border-white/20">
-      
-      {/* Title */}
-      <h1 className="text-3xl font-extrabold text-center mb-8 text-white drop-shadow-lg">
-        Đăng ký QR Hunt
-      </h1>
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-black px-4">
+      <div className="bg-white/10 backdrop-blur-xl p-6 rounded-3xl shadow-2xl w-full max-w-md border border-white/20">
+        <h1 className="text-3xl font-extrabold text-center mb-8 text-white drop-shadow-lg">
+          Đăng ký QR Hunt
+        </h1>
 
-      {/* Inputs */}
-      {inputs.map(({ field, placeholder, type }) =>
-        renderInput(field, placeholder, type)
-      )}
+        {inputs.map(({ field, placeholder, type }) =>
+          renderInput(field, placeholder, type)
+        )}
 
-      {/* Register button */}
-      <button
-        onClick={handleRegister}
-        disabled={loading}
-        className={`mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white shadow-lg transition-all transform ${
-          loading
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-gradient-to-r from-green-500 to-emerald-500 hover:scale-[1.02] hover:shadow-green-500/30"
-        }`}
-      >
-        {loading && <Loader2 className="animate-spin" size={20} />}
-        {loading ? "Đang đăng ký..." : "🎯 Đăng ký"}
-      </button>
-
-      {/* Login button */}
-      <button
-        onClick={() =>
-          router.push(
-            `/client/login?redirect=${encodeURIComponent(redirectParam)}`
-          )
-        }
-        className="mt-3 w-full py-3 rounded-xl font-semibold text-white/90 border border-white/40 hover:bg-white/20 transition-all hover:scale-[1.02]"
-      >
-        🔑 Đã có tài khoản? Đăng nhập
-      </button>
-
-      {/* Message */}
-      {message.text && (
-        <p
-          className={`mt-4 text-center font-medium ${
-            message.type === "error" ? "text-red-300" : "text-green-200"
+        <button
+          onClick={handleRegister}
+          disabled={loading}
+          className={`mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white shadow-lg transition-all transform ${
+            loading
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-gradient-to-r from-green-500 to-emerald-500 hover:scale-[1.02] hover:shadow-green-500/30"
           }`}
         >
-          {message.text}
-        </p>
-      )}
-    </div>
-  </div>
-);
+          {loading && <Loader2 className="animate-spin" size={20} />}
+          {loading ? "Đang đăng ký..." : "🎯 Đăng ký"}
+        </button>
 
+        <button
+          onClick={() =>
+            router.push(`/client/login?redirect=${encodeURIComponent(redirectParam)}`)
+          }
+          className="mt-3 w-full py-3 rounded-xl font-semibold text-white/90 border border-white/40 hover:bg-white/20 transition-all hover:scale-[1.02]"
+        >
+          🔑 Đã có tài khoản? Đăng nhập
+        </button>
+      </div>
+    </div>
+  );
 }

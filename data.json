@@ -1,133 +1,394 @@
 {
-  "players": {
-    "uid_1": {
-      "name": "Nguyễn Văn A",
-      "username": "nva2025",
-      "email": "a@example.com",
-      "phone": "0901111222",
-      "points": 150,
-      "collectedCards": {
-        "card_1": true,
-        "card_2": true
-      },
-      "scans": {
-        "qr_001": {
-          "type": "normal",
-          "points": 5,
-          "time": "2025-08-01T09:15:00Z"
-        },
-        "qr_010": {
-          "type": "rare",
-          "points": 20,
-          "time": "2025-08-01T09:30:00Z"
-        },
-        "qr_021": {
-          "type": "special",
-          "challengeResult": "win",
-          "points": 40,
-          "time": "2025-08-01T10:00:00Z"
-        }
-      }
-    },
-    "uid_2": {
-      "name": "Trần Thị B",
-      "username": "ttb2025",
-      "email": "b@example.com",
-      "phone": "0903333444",
-      "points": 95,
-      "collectedCards": {
-        "card_3": true
-      },
-      "scans": {
-        "qr_002": {
-          "type": "normal",
-          "points": 5,
-          "time": "2025-08-01T09:10:00Z"
-        },
-        "qr_011": {
-          "type": "rare",
-          "points": 25,
-          "time": "2025-08-01T09:45:00Z"
-        },
-        "qr_card_03": {
-          "type": "collection",
-          "cardId": "card_3",
-          "points": 0,
-          "time": "2025-08-01T09:50:00Z"
-        }
-      }
-    },
-    "uid_3": {
-      "name": "Lê Văn C",
-      "username": "lvc2025",
-      "email": "c@example.com",
-      "phone": "0905555666",
-      "points": 210,
-      "collectedCards": {
-        "card_1": true,
-        "card_2": true,
-        "card_3": true,
-        "card_4": true
-      },
-      "scans": {
-        "qr_003": {
-          "type": "normal",
-          "points": 5,
-          "time": "2025-08-01T09:05:00Z"
-        },
-        "qr_012": {
-          "type": "rare",
-          "points": 30,
-          "time": "2025-08-01T09:20:00Z"
-        },
-        "qr_022": {
-          "type": "special",
-          "challengeResult": "lose",
-          "points": 20,
-          "time": "2025-08-01T10:10:00Z"
-        }
-      }
-    }
-  },
-  "qrcodes": {
-    "qr_001": { "type": "normal", "points": 5 },
-    "qr_002": { "type": "normal", "points": 5 },
-    "qr_003": { "type": "normal", "points": 5 },
-    "qr_004": { "type": "normal", "points": 5 },
-    "qr_005": { "type": "normal", "points": 5 },
-
-    "qr_010": { "type": "rare", "points": 20 },
-    "qr_011": { "type": "rare", "points": 25 },
-    "qr_012": { "type": "rare", "points": 30 },
-    "qr_013": { "type": "rare", "points": 20 },
-    "qr_014": { "type": "rare", "points": 25 },
-
-    "qr_020": { "type": "special", "miniChallenge": "memory_game", "points": 10 },
-    "qr_021": { "type": "special", "miniChallenge": "quiz_game", "points": 15 },
-    "qr_022": { "type": "special", "miniChallenge": "reaction_game", "points": 20 },
-
-    "qr_card_01": { "type": "collection", "cardId": "card_1" },
-    "qr_card_02": { "type": "collection", "cardId": "card_2" },
-    "qr_card_03": { "type": "collection", "cardId": "card_3" },
-    "qr_card_04": { "type": "collection", "cardId": "card_4" },
-    "qr_card_05": { "type": "collection", "cardId": "card_5" }
-  },
-  "leaderboard": {
-    "uid_3": { "name": "Lê Văn C", "points": 210 },
-    "uid_1": { "name": "Nguyễn Văn A", "points": 150 },
-    "uid_2": { "name": "Trần Thị B", "points": 95 }
-  },
-  "rewards": {
-    "reward_1": { "name": "🎁 Hộp Quà Bí Ẩn", "pointsRequired": 50, "description": "Bí mật bên trong chỉ được biết khi mở" },
-    "reward_2": { "name": "🎁 Hộp Quà Bí Ẩn", "pointsRequired": 100, "description": "Bí mật bên trong chỉ được biết khi mở" },
-    "reward_3": { "name": "🎁 Hộp Quà Bí Ẩn", "pointsRequired": 150, "description": "Bí mật bên trong chỉ được biết khi mở" },
-    "reward_4": { "name": "🎁 Hộp Quà Bí Ẩn", "pointsRequired": 200, "description": "Bí mật bên trong chỉ được biết khi mở" },
-    "reward_5": { "name": "🎁 Hộp Quà Bí Ẩn", "pointsRequired": 300, "description": "Bí mật bên trong chỉ được biết khi mở" }
+  "admins": {
+    "J3BxRSnI0UZz3ffSrows4M1O0g62": true
   },
   "hourlyChallenges": {
     "2025-08-01T10:00:00Z": {
       "challengeType": "double_points",
       "description": "Quét QR trong giờ này sẽ được x2 điểm"
     }
+  },
+  "leaderboard": {
+    "9OXEBR32CETAd30YQZzh6j0Iy2O2": {
+      "name": "Đoàn quang thuận",
+      "points": 94
+    },
+    "m3tNZGGf7afQoDulQagr0YISv6n1": {
+      "name": "lân nguyễn",
+      "points": 129
+    }
+  },
+  "phones": {
+    "0905914203": "m3tNZGGf7afQoDulQagr0YISv6n1",
+    "0914938872": "9OXEBR32CETAd30YQZzh6j0Iy2O2"
+  },
+  "players": {
+    "9OXEBR32CETAd30YQZzh6j0Iy2O2": {
+      "email": "Thuan.doan210132@vnuk.edu.vn",
+      "name": "Đoàn quang thuận",
+      "phone": "0914938872",
+      "points": 94,
+      "scans": {
+        "879Q9H93": {
+          "points": 50,
+          "time": "2025-08-06T09:31:30.167Z",
+          "type": "normal"
+        },
+        "iEMxm0QK": {
+          "points": 34,
+          "time": "2025-08-07T02:23:35.956Z",
+          "type": "special"
+        },
+        "jB7j61G3": {
+          "points": 50,
+          "time": "2025-08-07T02:25:02.305Z",
+          "type": "normal"
+        },
+        "qr_002": {
+          "points": 5,
+          "time": "2025-08-06T08:32:19.440Z",
+          "type": "normal"
+        },
+        "qr_003": {
+          "points": 5,
+          "time": "2025-08-06T08:32:23.888Z",
+          "type": "normal"
+        },
+        "qr_005": {
+          "points": 5,
+          "time": "2025-08-06T08:32:41.913Z",
+          "type": "normal"
+        },
+        "qr_010": {
+          "points": 20,
+          "time": "2025-08-06T08:33:52.329Z",
+          "type": "rare"
+        },
+        "qr_011": {
+          "points": 25,
+          "time": "2025-08-06T08:32:55.399Z",
+          "type": "rare"
+        },
+        "qr_card_01": {
+          "points": 0,
+          "time": "2025-08-06T08:32:35.599Z",
+          "type": "collection"
+        }
+      },
+      "username": "Thuận"
+    },
+    "m3tNZGGf7afQoDulQagr0YISv6n1": {
+      "email": "lanvkuk2@gmail.com",
+      "name": "lân nguyễn",
+      "phone": "0905914203",
+      "points": 29,
+      "scans": {
+        "1zn2pLOj": {
+          "points": 14,
+          "time": "2025-08-04T10:33:24.575Z",
+          "type": "special"
+        },
+        "879Q9H93": {
+          "points": 50,
+          "time": "2025-08-06T09:29:20.933Z",
+          "type": "normal"
+        },
+        "bRRhSUVQ": {
+          "points": 40,
+          "time": "2025-08-04T09:39:24.645Z",
+          "type": "special"
+        },
+        "dtiYFrD2": {
+          "points": 6,
+          "time": "2025-08-06T08:50:43.532Z",
+          "type": "normal"
+        },
+        "iEMxm0QK": {
+          "points": 34,
+          "time": "2025-08-06T16:31:16.985Z",
+          "type": "special"
+        },
+        "jB7j61G3": {
+          "points": 50,
+          "time": "2025-08-07T02:25:17.358Z",
+          "type": "normal"
+        },
+        "q3m1xaSo": {
+          "points": 15,
+          "time": "2025-08-06T04:38:24.505Z",
+          "type": "normal"
+        },
+        "qr_002": {
+          "points": 5,
+          "time": "2025-08-06T08:41:46.137Z",
+          "type": "normal"
+        },
+        "qr_003": {
+          "points": 5,
+          "time": "2025-08-06T08:13:15.558Z",
+          "type": "normal"
+        },
+        "qr_005": {
+          "points": 5,
+          "time": "2025-08-06T08:13:30.782Z",
+          "type": "normal"
+        },
+        "qr_011": {
+          "points": 25,
+          "time": "2025-08-03T14:59:58.858Z",
+          "type": "rare"
+        },
+        "qr_012": {
+          "points": 30,
+          "time": "2025-08-03T14:39:16.947Z",
+          "type": "rare"
+        }
+      },
+      "username": "lân nguyễn"
+    },
+    "uid_1": {
+      "collectedCards": {
+        "card_1": true,
+        "card_2": true
+      },
+      "email": "a@example.com",
+      "name": "Nguyễn Văn A",
+      "phone": "0901111222",
+      "points": 150,
+      "scans": {
+        "qr_001": {
+          "points": 5,
+          "time": "2025-08-01T09:15:00Z",
+          "type": "normal"
+        },
+        "qr_010": {
+          "points": 20,
+          "time": "2025-08-01T09:30:00Z",
+          "type": "rare"
+        },
+        "qr_021": {
+          "challengeResult": "win",
+          "points": 40,
+          "time": "2025-08-01T10:00:00Z",
+          "type": "special"
+        }
+      },
+      "username": "nva2025"
+    },
+    "uid_2": {
+      "collectedCards": {
+        "card_3": true
+      },
+      "email": "b@example.com",
+      "name": "Trần Thị B",
+      "phone": "0903333444",
+      "points": 95,
+      "scans": {
+        "qr_002": {
+          "points": 5,
+          "time": "2025-08-01T09:10:00Z",
+          "type": "normal"
+        },
+        "qr_011": {
+          "points": 25,
+          "time": "2025-08-01T09:45:00Z",
+          "type": "rare"
+        },
+        "qr_card_03": {
+          "cardId": "card_3",
+          "points": 0,
+          "time": "2025-08-01T09:50:00Z",
+          "type": "collection"
+        }
+      },
+      "username": "ttb2025"
+    },
+    "uid_3": {
+      "collectedCards": {
+        "card_1": true,
+        "card_2": true,
+        "card_3": true,
+        "card_4": true
+      },
+      "email": "c@example.com",
+      "name": "Lê Văn C",
+      "phone": "0905555666",
+      "points": 210,
+      "scans": {
+        "qr_003": {
+          "points": 5,
+          "time": "2025-08-01T09:05:00Z",
+          "type": "normal"
+        },
+        "qr_012": {
+          "points": 30,
+          "time": "2025-08-01T09:20:00Z",
+          "type": "rare"
+        },
+        "qr_022": {
+          "challengeResult": "lose",
+          "points": 20,
+          "time": "2025-08-01T10:10:00Z",
+          "type": "special"
+        }
+      },
+      "username": "lvc2025"
+    }
+  },
+  "qrcodes": {
+    "1zn2pLOj": {
+      "createdAt": "2025-08-03T04:00:19.845Z",
+      "points": 7,
+      "type": "special"
+    },
+    "879Q9H93": {
+      "createdAt": "2025-08-06T09:29:10.696Z",
+      "points": 50,
+      "type": "normal"
+    },
+    "bRRhSUVQ": {
+      "createdAt": "2025-08-03T03:59:50.857Z",
+      "points": 20,
+      "type": "special"
+    },
+    "dtiYFrD2": {
+      "createdAt": "2025-08-06T08:50:36.557Z",
+      "points": 6,
+      "type": "normal"
+    },
+    "iEMxm0QK": {
+      "createdAt": "2025-08-06T16:31:07.988Z",
+      "points": 17,
+      "type": "special"
+    },
+    "jB7j61G3": {
+      "createdAt": "2025-08-07T02:24:53.534Z",
+      "points": 50,
+      "type": "normal"
+    },
+    "q3m1xaSo": {
+      "points": 15,
+      "type": "normal"
+    },
+    "qr_002": {
+      "points": 5,
+      "type": "normal"
+    },
+    "qr_003": {
+      "points": 5,
+      "type": "normal"
+    },
+    "qr_005": {
+      "points": 5,
+      "type": "normal"
+    },
+    "qr_010": {
+      "points": 20,
+      "type": "rare"
+    },
+    "qr_011": {
+      "points": 25,
+      "type": "rare"
+    },
+    "qr_012": {
+      "points": 30,
+      "type": "rare"
+    }
+  },
+  "redeems": {
+    "-OWklop_U5-DR_zIzZcL": {
+      "createdAt": 1754238765680,
+      "playerName": "lân nguyễn",
+      "playerUsername": "lân nguyễn",
+      "pointsUsed": 50,
+      "redeemCode": "Y6GFF4",
+      "rewardId": "reward_1",
+      "rewardName": "🎁 Hộp Quà Bí Ẩn",
+      "status": "confirmed",
+      "uid": "m3tNZGGf7afQoDulQagr0YISv6n1"
+    },
+    "-OWodIgEs5qYCQVHXOna": {
+      "createdAt": 1754303642378,
+      "playerName": "lân nguyễn",
+      "playerUsername": "lân nguyễn",
+      "pointsUsed": 50,
+      "redeemCode": "9UAA2F",
+      "rewardId": "reward_1",
+      "rewardName": "🎁 Hộp Quà Bí Ẩn",
+      "status": "confirmed",
+      "uid": "m3tNZGGf7afQoDulQagr0YISv6n1"
+    },
+    "-OWyW-Jz7cpjBlX-zkFl": {
+      "createdAt": 1754469238115,
+      "playerName": "Đoàn quang thuận",
+      "playerUsername": "Thuận",
+      "pointsUsed": 50,
+      "redeemCode": "2C5167",
+      "rewardId": "reward_1",
+      "rewardName": "🎁 Hộp Quà Bí Ẩn",
+      "status": "confirmed",
+      "uid": "9OXEBR32CETAd30YQZzh6j0Iy2O2"
+    },
+    "-OWyhjNN5JxfzkkFfcse": {
+      "createdAt": 1754472576512,
+      "playerName": "lân nguyễn",
+      "pointsUsed": 50,
+      "redeemCode": "O0WJ4X",
+      "rewardId": "reward_1",
+      "rewardName": "🎁 Hộp Quà Bí Ẩn",
+      "status": "confirmed",
+      "uid": "m3tNZGGf7afQoDulQagr0YISv6n1"
+    },
+    "-OX1KWoqE68l0EWox4H0": {
+      "createdAt": 1754533338468,
+      "playerName": "Đoàn quang thuận",
+      "pointsUsed": 50,
+      "redeemCode": "JA07AU",
+      "rewardId": "reward_1",
+      "rewardName": "🎁 Hộp Quà Bí Ẩn",
+      "status": "confirmed",
+      "uid": "9OXEBR32CETAd30YQZzh6j0Iy2O2"
+    },
+    "-OX1LK2NhUQRlx67khsu": {
+      "createdAt": 1754533548171,
+      "playerName": "lân nguyễn",
+      "pointsUsed": 100,
+      "redeemCode": "M9S2UX",
+      "rewardId": "reward_2",
+      "rewardName": "🎁 Hộp Quà Bí Ẩn",
+      "status": "confirmed",
+      "uid": "m3tNZGGf7afQoDulQagr0YISv6n1"
+    }
+  },
+  "rewards": {
+    "reward_1": {
+      "description": "Bí mật bên trong chỉ được biết khi mở",
+      "name": "🎁 Hộp Quà Bí Ẩn",
+      "pointsRequired": 50
+    },
+    "reward_2": {
+      "description": "Bí mật bên trong chỉ được biết khi mở",
+      "name": "🎁 Hộp Quà Bí Ẩn",
+      "pointsRequired": 100
+    },
+    "reward_3": {
+      "description": "Bí mật bên trong chỉ được biết khi mở",
+      "name": "🎁 Hộp Quà Bí Ẩn",
+      "pointsRequired": 150
+    },
+    "reward_4": {
+      "description": "Bí mật bên trong chỉ được biết khi mở",
+      "name": "🎁 Hộp Quà Bí Ẩn",
+      "pointsRequired": 200
+    },
+    "reward_5": {
+      "description": "Bí mật bên trong chỉ được biết khi mở",
+      "name": "🎁 Hộp Quà Bí Ẩn",
+      "pointsRequired": 300
+    }
+  },
+  "usernames": {
+    "Thuận": "9OXEBR32CETAd30YQZzh6j0Iy2O2",
+    "lân nguyễn": "m3tNZGGf7afQoDulQagr0YISv6n1"
   }
 }

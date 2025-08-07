@@ -4,17 +4,29 @@ import { Html5Qrcode } from "html5-qrcode";
 import { useAuth } from "@/context/AuthProvider";
 import { db } from "@/lib/firebase-client";
 import { ref as dbRef, get } from "firebase/database";
-import { Loader2, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import {
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Info,
+} from "lucide-react";
+import { useToast } from "@/context/ToastProvider";
+import { useRouter } from "next/navigation";
 
 export default function QRScanPage() {
   const { user } = useAuth();
+  const { triggerToast } = useToast();
+  const router = useRouter();
+
   const [points, setPoints] = useState(0);
   const [status, setStatus] = useState({ type: "", message: "" });
-  const scannerRef = useRef(null);
-  const lastScanRef = useRef("");
-  const scannerStartedRef = useRef(false);
 
-  // Lấy điểm hiện tại khi user login
+  const scannerRef = useRef(null);
+  const scannerStartedRef = useRef(false);
+  const recentScansRef = useRef(new Set());
+
+  // Lấy điểm khi user đăng nhập (TC01)
   useEffect(() => {
     if (!user) return;
     get(dbRef(db, `players/${user.uid}/points`)).then((snap) => {
@@ -22,12 +34,14 @@ export default function QRScanPage() {
     });
   }, [user]);
 
-  // Hàm xử lý khi scan thành công
   const handleScanSuccess = async (decodedText) => {
-    if (lastScanRef.current === decodedText) return;
-    lastScanRef.current = decodedText;
+    // TC08: Chặn spam quét
+    if (!decodedText || recentScansRef.current.has(decodedText)) return;
 
-    setStatus({ type: "info", message: "⏳ Đang xử lý..." });
+    recentScansRef.current.add(decodedText);
+    setTimeout(() => recentScansRef.current.delete(decodedText), 5000);
+
+    setStatus({ type: "info", message: "Đang xử lý mã QR..." });
 
     try {
       const res = await fetch("/api/qrcode/scan", {
@@ -35,31 +49,30 @@ export default function QRScanPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: decodedText, uid: user.uid }),
       });
+
       const data = await res.json();
 
       if (res.ok && data.success) {
+        // TC01: Cộng điểm nếu thành công
         setPoints(data.totalPoints);
-        setStatus({
-          type: "success",
-          message: `+${data.pointsAdded} điểm 🎉`,
-        });
+        setStatus({ type: "success", message: `+${data.pointsAdded} điểm 🎉` });
+        triggerToast(`+${data.pointsAdded} điểm 🎉`, "success");
       } else if (data.alreadyScanned) {
-        setStatus({
-          type: "warning",
-          message: "⚠️ Bạn đã quét mã này rồi.",
-        });
+        // TC02, TC06, TC07: Đã quét rồi
+        setStatus({ type: "warning", message: "Bạn đã quét mã này rồi." });
+        triggerToast("⚠️ Bạn đã quét mã này rồi.", "warning");
       } else {
-        setStatus({
-          type: "error",
-          message: data.error || "Lỗi khi quét QR.",
-        });
+        // TC03: Mã không hợp lệ
+        setStatus({ type: "error", message: data.error || "QR không hợp lệ." });
+        triggerToast(data.error || "❌ QR không hợp lệ.", "error");
       }
     } catch {
-      setStatus({ type: "error", message: "❌ Lỗi kết nối API." });
+      // Không có internet
+      setStatus({ type: "error", message: "Không có kết nối internet." });
+      triggerToast("❌ Không có kết nối internet.", "error");
     }
   };
 
-  // Khởi tạo scanner chỉ một lần sau khi user đã sẵn sàng
   useEffect(() => {
     if (!user || scannerStartedRef.current) return;
     scannerStartedRef.current = true;
@@ -67,23 +80,34 @@ export default function QRScanPage() {
     const scanner = new Html5Qrcode("qr-reader");
     scannerRef.current = scanner;
 
+    // TC05: Xử lý lỗi quét không rõ mã
     scanner
       .start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+        { fps: 10, qrbox: { width: 200, height: 200 }, aspectRatio: 4.3 },
         handleScanSuccess,
-        () => {}
+        (errMessage) => {
+          if (
+            errMessage?.includes("decode") ||
+            errMessage?.includes("NotFoundException")
+          ) {
+            setStatus({
+              type: "error",
+              message: "Không nhận diện được mã QR. Hãy thử lại.",
+            });
+          }
+        }
       )
       .catch((err) => {
         console.error("Lỗi khi start scanner", err);
         setStatus({
           type: "error",
-          message: "Không thể khởi động camera. Vui lòng kiểm tra quyền truy cập.",
+          message:
+            "Không thể khởi động camera. Vui lòng kiểm tra quyền truy cập.",
         });
       });
 
     return () => {
-      // Chỉ stop nếu đang scanning
       if (scannerRef.current?.isScanning) {
         scannerRef.current.stop().catch(() => {});
       }
@@ -91,43 +115,30 @@ export default function QRScanPage() {
   }, [user]);
 
   const iconMap = {
-    success: <CheckCircle2 className="text-green-400 w-14 h-14" />,
-    error: <XCircle className="text-red-400 w-14 h-14" />,
-    warning: <AlertTriangle className="text-yellow-400 w-14 h-14" />,
-    info: <Loader2 className="text-blue-400 w-10 h-10 animate-spin" />,
+    success: <CheckCircle2 className="text-green-400 w-6 h-6" />,
+    error: <XCircle className="text-red-400 w-6 h-6" />,
+    warning: <AlertTriangle className="text-yellow-400 w-6 h-6" />,
+    info: <Loader2 className="text-blue-400 w-6 h-6 animate-spin" />,
   };
 
-  // Nếu đang load auth thì hiển thị loading
-  if (user === undefined) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin" />
-      </div>
-    );
-  }
-
-  // Nếu chưa đăng nhập
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <p>Vui lòng đăng nhập để quét QR.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center p-4">
-      {/* Khung quét */}
+    <div className="min-h-screen bg-black text-white flex flex-col items-center px-4 pt-4">
+      {/* Điểm số */}
+      <div className="mb-4 px-4 py-2 bg-purple-700 rounded-xl text-white font-bold text-xl shadow-md">
+        🎯 Điểm của bạn: <span className="text-yellow-300">{points}</span>
+      </div>
+
+      {/* Camera quét */}
       <div
         id="qr-reader"
-        className="w-full max-w-sm rounded-lg overflow-hidden border-3 border-purple-500 shadow-lg"
-        style={{ aspectRatio: "4:3" }}
+        className="rounded-2xl overflow-hidden border-4 border-purple-500 shadow-xl"
+        style={{ width: "300px", height: "400px" }}
       ></div>
 
-      {/* Trạng thái */}
+      {/* Thông báo trạng thái */}
       {status.message && (
-        <div className="mt-4 flex items-center gap-2 text-lg font-medium">
-          {iconMap[status.type]} {status.message}
+        <div className="mt-5 flex items-center gap-2 text-sm font-medium bg-white text-black px-4 py-2 rounded-md shadow">
+          {iconMap[status.type]} <span>{status.message}</span>
         </div>
       )}
     </div>

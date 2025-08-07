@@ -1,5 +1,11 @@
 import { db } from "@/lib/firebase";
-import { ref, get, update } from "firebase/database";
+import {
+  ref,
+  get,
+  update,
+  runTransaction,
+  serverTimestamp,
+} from "firebase/database";
 import { NextResponse } from "next/server";
 
 // Chuyển key thành an toàn cho Firebase
@@ -28,21 +34,30 @@ export async function POST(req) {
       );
     }
 
-    // Chuẩn hóa key quét
     const scannedCode = safeKey(extractCode(code));
-
     const playerRef = ref(db, `players/${uid}`);
-    const playerSnap = await get(playerRef);
-
-    // Kiểm tra đã quét chưa
     const scanRef = ref(db, `players/${uid}/scans/${scannedCode}`);
-    const scanSnap = await get(scanRef);
-    if (scanSnap.exists()) {
+
+    let alreadyScanned = false;
+
+    // ⚠ Transaction để kiểm tra và khóa mã quét một lần duy nhất
+    await runTransaction(scanRef, (currentData) => {
+      if (currentData !== null) {
+        alreadyScanned = true;
+        return; // Hủy transaction
+      }
+      return {
+        type: "pending",
+        time: serverTimestamp(),
+      };
+    });
+
+    if (alreadyScanned) {
       return NextResponse.json(
         {
           success: false,
           error: "⚠ Bạn đã quét mã này rồi.",
-          alreadyScanned: true
+          alreadyScanned: true,
         },
         { status: 200 }
       );
@@ -50,7 +65,11 @@ export async function POST(req) {
 
     console.log(`📡 API Scan: code=${scannedCode}, uid=${uid}`);
 
-    // Lấy dữ liệu QR
+    // Lấy dữ liệu người chơi
+    const playerSnap = await get(playerRef);
+    const oldPoints = playerSnap.exists() ? playerSnap.val().points || 0 : 0;
+
+    // Lấy thông tin mã QR
     const qrRef = ref(db, `qrcodes/${scannedCode}`);
     const qrSnap = await get(qrRef);
     if (!qrSnap.exists()) {
@@ -60,47 +79,40 @@ export async function POST(req) {
       );
     }
     const qrData = qrSnap.val();
-
-    // Tính điểm cơ bản
     let finalPoints = qrData.points || 0;
 
-    // Bonus giờ vàng
+    // Bonus giờ vàng (nếu có)
     const hourlySnap = await get(ref(db, "hourlyChallenges"));
-    if (hourlySnap.exists()) {
-      const challenges = hourlySnap.val();
-      const now = new Date();
-      for (let key in challenges) {
-        const challengeTime = new Date(key);
-        if (
-          now >= challengeTime &&
-          now <= new Date(challengeTime.getTime() + 60 * 60 * 1000)
-        ) {
-          if (challenges[key].challengeType === "double_points") {
-            finalPoints *= 2;
+      if (hourlySnap.exists()) {
+        const challenges = hourlySnap.val();
+        const now = new Date();
+
+        for (let key in challenges) {
+          const challengeTime = new Date(key);
+          const diffSec = (now - challengeTime) / 1000;
+
+          // Chỉ áp dụng nếu trong vòng 5 phút sau thời điểm challenge
+          if (diffSec >= 0 && diffSec <= 300) {
+            if (challenges[key].type === "double_points") {
+              finalPoints *= 2;
+            }
           }
         }
       }
-    }
 
-    // Nếu là special → x2 tiếp
-    if (qrData.type === "special") {
-      finalPoints *= 2;
-    }
-
-    // Cập nhật điểm cho user
-    const oldPoints = playerSnap.exists() ? playerSnap.val().points || 0 : 0;
     const newPoints = oldPoints + finalPoints;
 
+    // Cập nhật điểm và thông tin quét cho người chơi
     await update(playerRef, {
       points: newPoints,
       [`scans/${scannedCode}`]: {
         type: qrData.type,
         points: finalPoints,
-        time: new Date().toISOString(),
+        time: serverTimestamp(),
       },
     });
 
-    // Cập nhật leaderboard
+    // Cập nhật bảng xếp hạng
     await update(ref(db, `leaderboard/${uid}`), {
       name: playerSnap.val()?.name || "Người chơi",
       points: newPoints,
